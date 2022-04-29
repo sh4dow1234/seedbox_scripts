@@ -1,0 +1,22 @@
+#!/bin/bash
+# RCLONE UPLOAD CRON TAB SCRIPT
+# Type crontab -e and add line below (without # )
+# * * * * * root /home/scripts/upload-tv.cron >/dev/null 2>&1
+
+if pidof -o %PPID -x "upload-tv.cron"; then
+exit 1
+fi
+
+LOGFILE="/home/speedo/scripts/logs/upload-tv.cron.log"
+FROM="/home/speedo/plex/tv-r/"
+TO="tv-gd:/"
+
+# CHECK FOR FILES IN FROM FOLDER THAT ARE OLDER THEN 15 MINUTES
+if find $FROM* -type f -mmin +15 | read
+then
+echo "$(date "+%d.%m.%Y %T") RCLONE UPLOAD STARTED" | tee -a $LOGFILE
+# MOVE FILES OLDER THEN 15 MINUTES
+rclone move $FROM $TO -c --no-traverse --transfers=300 --checkers=300 --delete-after --min-age 15m --log-file=$LOGFILE
+echo "$(date "+%d.%m.%Y %T") RCLONE UPLOAD ENDED" | tee -a $LOGFILE
+fi
+exit

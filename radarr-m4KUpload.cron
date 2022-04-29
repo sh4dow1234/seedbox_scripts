@@ -1,0 +1,22 @@
+#!/bin/bash
+# RCLONE UPLOAD CRON TAB SCRIPT
+# Type crontab -e and add line below (without # )
+# * * * * * root /home/scripts/radarr-m4KUpload.cron >/dev/null 2>&1
+
+if pidof -o %PPID -x "radarr-m4KUpload.cron"; then
+exit 1
+fi
+
+LOGFILE="/home/speedo/scripts/logs/radarr-m4KUpload.cron.log"
+FROM="/home/speedo/radarr/4k/"
+TO="m4k-gd:/"
+
+# CHECK FOR FILES IN FROM FOLDER THAT ARE OLDER THEN 10 MINUTES
+if find $FROM* -type f -mmin +10 | read
+then
+echo "$(date "+%d.%m.%Y %T") RCLONE UPLOAD STARTED" | tee -a $LOGFILE
+# MOVE FILES OLDER THEN 10 MINUTES
+rclone move $FROM $TO -c --transfers=10 --checkers=50 --delete-after --min-age 10m --log-file=$LOGFILE
+echo "$(date "+%d.%m.%Y %T") RCLONE UPLOAD ENDED" | tee -a $LOGFILE
+fi
+exit

@@ -1,0 +1,22 @@
+#!/bin/bash
+# RCLONE UPLOAD CRON TAB SCRIPT
+# Type crontab -e and add line below (without # )
+# * * * * * root /home/scripts/radarr-mComedyUpload.cron >/dev/null 2>&1
+
+if pidof -o %PPID -x "radarr-mComedyUpload.cron"; then
+exit 1
+fi
+
+LOGFILE="/home/speedo/scripts/logs/radarr-mComedyUpload.cron.log"
+FROM="/home/speedo/radarr/comedy/"
+TO="m-gd:/comedy/"
+
+# CHECK FOR FILES IN FROM FOLDER THAT ARE OLDER THEN 5 MINUTES
+if find $FROM* -type f -mmin +5 | read
+then
+echo "$(date "+%d.%m.%Y %T") RCLONE UPLOAD STARTED" | tee -a $LOGFILE
+# MOVE FILES OLDER THEN 5 MINUTES
+rclone move $FROM $TO -c --transfers=30 --checkers=50 --delete-after --min-age 5m --log-file=$LOGFILE
+echo "$(date "+%d.%m.%Y %T") RCLONE UPLOAD ENDED" | tee -a $LOGFILE
+fi
+exit

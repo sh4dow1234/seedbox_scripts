@@ -1,0 +1,37 @@
+#!/bin/bash
+# Change paths for mount and log file & create mountcheck file.
+# Add script to crontab by typing crontab -e and pasting the line below (without # in front )
+# * * * * * /home/scripts/mount-m.cron >/dev/null 2>&1
+# Make script executable with: chmod a+x /home/scripts/mount-m.cron
+
+logfile="/home/speedo/scripts/logs/mount-m4k.cron.log"
+
+if pidof -o %PPID -x "mount-m4k.cron"; then
+echo "$(date "+%d.%m.%Y %T") EXIT: mount-m4k.cron already running."
+exit 1
+fi
+
+if [[ -f "/home/speedo/plex/m4k-gd/mountcheck" ]]; then
+echo "$(date "+%d.%m.%Y %T") INFO: Check successful, /home/speedo/plex/m4k-gd mounted." | tee -a "$logfile"
+exit
+else
+echo "$(date "+%d.%m.%Y %T") ERROR: Drive not mounted, remount in progress." | tee -a "$logfile"
+# Unmount before remounting
+fusermount -uz /home/speedo/plex/m4k-gd | tee -a "$logfile"
+rclone mount \
+        --read-only \
+        --allow-non-empty \
+        --max-read-ahead 2G \
+        --acd-templink-threshold 0 \
+        --checkers 16 \
+        --quiet \
+        --stats 0 \
+dec-m4k:/ /home/speedo/plex/m4k-gd/&
+
+if [[ -f "/home/speedo/plex/m4k-gd/mountcheck" ]]; then
+echo "$(date "+%d.%m.%Y %T") INFO: Remount successful." | tee -a "$logfile"
+else
+echo "$(date "+%d.%m.%Y %T") CRITICAL: Remount failed." | tee -a "$logfile"
+fi
+fi
+exit
